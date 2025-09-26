@@ -320,9 +320,6 @@ class AdminManager {
                     <div class="flex justify-between items-start mb-2">
                         <h5 class="font-medium text-gray-900 flex-1">${result.metadata?.article_title || 'Không có tiêu đề'}</h5>
                         <div class="flex items-center gap-2 ml-4">
-                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                Điểm: ${(result.score * 100).toFixed(1)}%
-                            </span>
                             <button 
                                 onclick="adminManager.deleteArticle('${articleId}')" 
                                 class="text-red-600 hover:text-red-800 p-1 rounded transition-colors"
