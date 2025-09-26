@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - RAG Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../Css/styles.css">
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-blue-600">RAG Chatbot</h1>
+                <p class="text-gray-600 mt-2">Tạo tài khoản mới</p>
+            </div>
+            
+            <form id="registerForm">
+                <div class="mb-4">
+                    <label for="displayName" class="block text-gray-700 text-sm font-bold mb-2">Tên hiển thị</label>
+                    <input 
+                        type="text" 
+                        id="displayName" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Nhập tên hiển thị của bạn"
+                        required
+                    >
+                </div>
+                
+                <div class="mb-4">
+                    <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Nhập email của bạn"
+                        required
+                    >
+                </div>
+                
+                <div class="mb-6">
+                    <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Mật khẩu</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Nhập mật khẩu của bạn"
+                        required
+                        minlength="6"
+                    >
+                </div>
+                
+                <button 
+                    type="submit" 
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    Đăng ký
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-gray-600">
+                    Đã có tài khoản? 
+                    <a href="login.html" class="text-blue-500 hover:text-blue-700 font-medium">Đăng nhập</a>
+                </p>
+            </div>
+            
+            <div id="errorMessage" class="mt-4 text-red-500 text-center hidden">
+                <!-- Thông báo lỗi sẽ xuất hiện ở đây -->
+            </div>
+            
+            <div id="successMessage" class="mt-4 text-green-500 text-center hidden">
+                <!-- Thông báo thành công sẽ xuất hiện ở đây -->
+            </div>
+        </div>
+    </div>
+
+    <script src="../Js/env-config.js" onerror="console.log('env-config.js not found, using default config')"></script>
+    <script type="module">
+        import { API_BASE_URL } from '../Js/apiConfig.js';
+        
+        const API_URL = `${API_BASE_URL}/api/auths`;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const registerForm = document.getElementById('registerForm');
+            const displayNameInput = document.getElementById('displayName');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const displayName = displayNameInput.value.trim();
+                const email = emailInput.value.trim();
+                const password = passwordInput.value.trim();
+                
+                if (!displayName || !email || !password) {
+                    showError('Vui lòng điền đầy đủ các trường');
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showError('Mật khẩu phải có ít nhất 6 ký tự');
+                    return;
+                }
+                
+                try {
+                    // Gọi API đăng ký
+                    const response = await axios.post(`${API_URL}/register`, {
+                        email: email,
+                        password: password,
+                        display_name: displayName
+                    });
+                    
+                    const data = response.data;
+                    if (data.success) {
+                        showSuccess(data.message || 'Đăng ký thành công! Đang chuyển hướng đến cuộc trò chuyện...');
+                        if (data.token) {
+                            localStorage.setItem('authToken', data.token);
+                            setTimeout(() => {
+                                window.location.href = 'chat.html';
+                            }, 2000);
+                        }
+                    } else {
+                        showError(data.message || 'Đăng ký thất bại');
+                    }
+                } catch (error) {
+                    console.error('Lỗi đăng ký:', error);
+                    if (error.response && error.response.data && error.response.data.message) {
+                        showError(error.response.data.message);
+                    } else {
+                        showError('Đăng ký thất bại. Vui lòng thử lại.');
+                    }
+                }
+            });
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.classList.remove('hidden');
+                successMessage.classList.add('hidden');
+                
+                // Ẩn lỗi sau 5 giây
+                setTimeout(() => {
+                    errorMessage.classList.add('hidden');
+                }, 5000);
+            }
+            
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

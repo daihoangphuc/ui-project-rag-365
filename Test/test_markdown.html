@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="../Css/styles.css">
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-4">Markdown List Test</h1>
+        
+        <div class="markdown-content bg-white p-6 rounded-lg shadow">
+            <div id="markdown-output"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configure marked options
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            smartypants: true,
+            sanitize: false,
+            pedantic: false,
+            silent: false
+        });
+
+        const testMarkdown = "| Tính năng | REST API | GraphQL |\n|---|---|---|\n| Endpoint | Nhiều endpoint, mỗi endpoint đại diện cho một tài nguyên [5] | Chỉ một endpoint duy nhất [5] |\n| Truy vấn dữ liệu | Client yêu cầu dữ liệu theo cấu trúc định sẵn của server [4] | Client chỉ định chính xác các trường cần lấy [5], hỗ trợ dữ liệu lồng nhau [2] |\n| Phương thức HTTP | Sử dụng các phương thức HTTP chuẩn: GET, POST, PUT, DELETE [5] | Không sử dụng phương thức HTTP chuẩn [4] |\n| Ưu điểm | Giao diện đơn giản, thống nhất; chiến lược caching dễ áp dụng [5]; API đơn giản, ổn định, dễ bảo trì [2, 3] | Linh hoạt, hiện đại; hỗ trợ Mutation, Subscription; phù hợp với UI thay đổi nhanh hoặc cần tổng hợp dữ liệu từ nhiều nguồn [2, 3] |\n| Hạn chế | Đôi khi phải gọi nhiều endpoint để lấy đủ dữ liệu liên quan [5] | Tăng độ phức tạp phía client; có nguy cơ bị lạm dụng truy vấn sâu, nặng nếu không có giới hạn thích hợp; chiến lược caching khó hơn so với REST [2, 3] |\n\n\n[2, 3, 4, 5] REST API vs. GraphQL – So sánh trong thiết kế API";
+
+        document.getElementById('markdown-output').innerHTML = marked.parse(testMarkdown);
+    </script>
+</body>
+</html>

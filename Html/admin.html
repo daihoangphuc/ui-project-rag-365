@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Điều Khiển Quản Trị - Hệ Thống RAG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../Css/styles.css">
+    <style>
+        .status-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .status-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        .metric-number {
+            font-weight: 700;
+            font-size: 2rem;
+        }
+        .search-result-item {
+            transition: all 0.2s ease;
+        }
+        .search-result-item:hover {
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header điều hướng -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-cogs text-2xl text-blue-600 mr-3"></i>
+                    <h1 class="text-xl font-semibold text-gray-900">Bảng Điều Khiển Quản Trị</h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- Nút Chat đã được thêm ở đây -->
+                    <a href="chat.html" class="text-gray-600 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-gray-100">
+                        <i class="fas fa-comment-dots text-lg"></i>
+                    </a>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-user-circle text-lg mr-2"></i>
+                        <span id="adminName">Quản trị viên</span>
+                    </div>
+                    <button id="logoutBtn" class="text-gray-600 hover:text-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Nội dung chính -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Tổng quan hệ thống -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Tổng Quan Hệ Thống</h2>
+                
+                <!-- Điều khiển đồng bộ trong Header -->
+                <div class="flex items-center gap-3">
+                    <div>
+                        <label for="batchSize" class="block text-xs text-gray-600 mb-1">Kích thước batch</label>
+                        <input 
+                            type="number" 
+                            id="batchSize" 
+                            min="1" 
+                            max="100" 
+                            value="100"
+                            class="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                    </div>
+                    
+                    <div class="mt-4 flex items-center gap-2">
+                        <button 
+                            id="syncBtn" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <span id="syncBtnText">
+                                <i class="fas fa-sync-alt mr-1"></i>
+                                Đồng Bộ
+                            </span>
+                            <i id="syncSpinner" class="fas fa-spinner fa-spin hidden ml-1"></i>
+                        </button>
+                        
+                        <button 
+                            id="refreshBtn" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <span id="refreshBtnText">
+                                <i class="fas fa-refresh mr-1"></i>
+                                Làm Mới
+                            </span>
+                            <i id="refreshSpinner" class="fas fa-spinner fa-spin hidden ml-1"></i>
+                        </button>
+                        
+                        <button 
+                            id="resetBtn" 
+                            class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <span id="resetBtnText">
+                                <i class="fas fa-trash mr-1"></i>
+                                Reset
+                            </span>
+                            <i id="resetSpinner" class="fas fa-spinner fa-spin hidden ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Thẻ trạng thái -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Tổng số bài viết -->
+                <div class="status-card bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <i class="fas fa-file-alt text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Tổng số bài viết</p>
+                            <p id="totalArticles" class="metric-number text-blue-600">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bài viết đã xử lý -->
+                <div class="status-card bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600">
+                            <i class="fas fa-check-circle text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Đã xử lý</p>
+                            <p id="processedArticles" class="metric-number text-green-600">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bài viết đang chờ -->
+                <div class="status-card bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                            <i class="fas fa-clock text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Đang chờ</p>
+                            <p id="pendingArticles" class="metric-number text-yellow-600">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lần đồng bộ cuối -->
+                <div class="status-card bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                            <i class="fas fa-sync-alt text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Lần đồng bộ cuối</p>
+                            <p id="lastSync" class="text-sm text-purple-600 font-medium">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phần tìm kiếm -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-search mr-2 text-green-600"></i>
+                Tìm Kiếm Bài Viết
+            </h3>
+            
+            <div class="flex gap-4 mb-4">
+                <div class="flex-1">
+                    <input 
+                        type="text" 
+                        id="searchQuery" 
+                        placeholder="Nhập từ khóa tìm kiếm..."
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                    >
+                </div>
+                <div>
+                    <input 
+                        type="number" 
+                        id="searchTopK" 
+                        min="1" 
+                        max="50" 
+                        value="10"
+                        placeholder="Số kết quả"
+                        class="w-20 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                    >
+                </div>
+                <button 
+                    id="searchBtn" 
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors"
+                >
+                    <i class="fas fa-search mr-1"></i>
+                    Tìm Kiếm
+                </button>
+            </div>
+            
+            <!-- Kết quả tìm kiếm -->
+            <div id="searchResults" class="hidden">
+                <h4 class="font-medium text-gray-900 mb-3">Kết quả tìm kiếm:</h4>
+                <div id="searchResultsList" class="space-y-3 max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lớp phủ tải -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white bg-opacity-90 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg text-center border">
+            <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
+            <p class="text-gray-700">Đang tải...</p>
+        </div>
+    </div>
+
+    <!-- Thông báo Toast -->
+    <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+        <div class="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm">
+            <div class="flex items-center">
+                <i id="toastIcon" class="text-xl mr-3"></i>
+                <div class="flex-1">
+                    <p id="toastMessage" class="text-sm font-medium text-gray-900"></p>
+                </div>
+                <button id="toastClose" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tải trình quản lý quản trị dưới dạng một module -->
+    <script type="module" src="../Js/adminManager.js"></script>
+</body>
+</html>

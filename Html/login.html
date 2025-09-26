@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - RAG Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../Css/styles.css">
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-blue-600">RAG Chatbot</h1>
+                <p class="text-gray-600 mt-2">Đăng nhập vào tài khoản của bạn</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                    <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nhập email của bạn" required>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Mật khẩu</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nhập mật khẩu của bạn" required>
+                </div>
+                
+                <button type="submit" id="loginButton" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
+                    <span id="buttonText">Đăng nhập</span>
+                    <i id="loadingIcon" class="fas fa-spinner fa-spin hidden ml-2"></i>
+                </button>
+            </form>
+            
+            <div class="mt-4 text-center">
+                <a href="forgot-password.html" class="text-blue-500 hover:text-blue-700 text-sm font-medium">Quên mật khẩu?</a>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <p class="text-gray-600">Chưa có tài khoản? <a href="register.html" class="text-blue-500 hover:text-blue-700 font-medium">Đăng ký</a></p>
+            </div>
+            
+            <div id="errorMessage" class="mt-4 text-center hidden"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { API_BASE_URL } from '../Js/apiConfig.js';
+        
+        const API_URL = `${API_BASE_URL}/api/auths`;
+        const elements = {
+            form: document.getElementById('loginForm'),
+            email: document.getElementById('email'),
+            password: document.getElementById('password'),
+            button: document.getElementById('loginButton'),
+            buttonText: document.getElementById('buttonText'),
+            loadingIcon: document.getElementById('loadingIcon'),
+            errorMessage: document.getElementById('errorMessage')
+        };
+
+        // Kiểm tra đăng nhập hiện tại
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            axios.get(`${API_URL}/me`, { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(() => window.location.href = 'chat.html')
+                .catch(() => localStorage.removeItem('authToken'));
+        }
+
+        // Gửi biểu mẫu
+        elements.form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = elements.email.value.trim();
+            const password = elements.password.value.trim();
+            
+            if (!email || !password) return showMessage('Vui lòng điền đầy đủ thông tin', 'error');
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showMessage('Vui lòng nhập một email hợp lệ', 'error');
+            
+            setLoading(true);
+            
+            try {
+                const { data } = await axios.post(`${API_URL}/login`, { email, password }, {
+                    headers: { 'Content-Type': 'application/json' },
+                    timeout: 10000
+                });
+                
+                if (data.success) {
+                    if (data.token) localStorage.setItem('authToken', data.token);
+                    if (data.user) localStorage.setItem('userInfo', JSON.stringify(data.user));
+                    showMessage('Đăng nhập thành công! Đang chuyển hướng...', 'success');
+                    setTimeout(() => window.location.href = 'chat.html', 1000);
+                } else {
+                    showMessage(data.message || 'Đăng nhập thất bại', 'error');
+                }
+            } catch (error) {
+                const message = error.response?.data?.message || 
+                               (error.response?.status === 401 ? 'Email hoặc mật khẩu không hợp lệ' : 
+                                error.request ? 'Lỗi kết nối' : 'Đã xảy ra lỗi');
+                showMessage(message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function setLoading(loading) {
+            elements.button.disabled = loading;
+            elements.buttonText.textContent = loading ? 'Đang đăng nhập...' : 'Đăng nhập';
+            elements.loadingIcon.classList.toggle('hidden', !loading);
+        }
+
+        function showMessage(message, type) {
+            elements.errorMessage.textContent = message;
+            elements.errorMessage.className = `mt-4 text-center ${type === 'error' ? 'text-red-500' : 'text-green-500'}`;
+            elements.errorMessage.classList.remove('hidden');
+            if (type === 'error') setTimeout(() => elements.errorMessage.classList.add('hidden'), 5000);
+        }
+    </script>
+</body>
+</html>
