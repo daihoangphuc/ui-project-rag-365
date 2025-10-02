@@ -52,6 +52,9 @@ async function sendMessage(message, sessionId, chatMessages, addAssistantMessage
     }
 }
 
+// Biến global để lưu interval timer
+let loadingTimerInterval = null;
+
 function showLoadingMessage(chatMessages) {
     const container = chatMessages.querySelector('.max-w-4xl');
     
@@ -59,6 +62,12 @@ function showLoadingMessage(chatMessages) {
     const existingLoading = container.querySelector('.loading-message-container');
     if (existingLoading) {
         existingLoading.remove();
+    }
+    
+    // Clear interval cũ nếu có
+    if (loadingTimerInterval) {
+        clearInterval(loadingTimerInterval);
+        loadingTimerInterval = null;
     }
     
     const loadingElement = document.createElement('div');
@@ -75,7 +84,7 @@ function showLoadingMessage(chatMessages) {
                 </div>
             </div>
             <div class="mt-1 text-gray-700">
-                <p>Đang truy xuất thông tin <span class="loading-dots"></span></p>
+                <p>Đang truy xuất thông tin <span class="loading-dots"></span> <span class="loading-timer text-primary-600 font-mono font-semibold">0.0s</span></p>
                 <div class="flex space-x-1 mt-2">
                     <div class="w-2 h-2 bg-gray-300 rounded-full loading-message"></div>
                     <div class="w-2 h-2 bg-gray-300 rounded-full loading-message" style="animation-delay: 0.2s"></div>
@@ -90,6 +99,17 @@ function showLoadingMessage(chatMessages) {
     // Cuộn xuống dưới cùng
     chatMessages.scrollTop = chatMessages.scrollHeight;
     
+    // Start timer
+    const startTime = Date.now();
+    const timerElement = loadingElement.querySelector('.loading-timer');
+    
+    loadingTimerInterval = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000; // Convert to seconds
+        if (timerElement) {
+            timerElement.textContent = `${elapsed.toFixed(1)}s`;
+        }
+    }, 100); // Update every 100ms
+    
     return loadingElement;
 }
 
@@ -98,6 +118,12 @@ function hideLoadingMessage(chatMessages) {
     const loadingElement = container.querySelector('.loading-message-container');
     if (loadingElement) {
         loadingElement.remove();
+    }
+    
+    // Clear timer interval
+    if (loadingTimerInterval) {
+        clearInterval(loadingTimerInterval);
+        loadingTimerInterval = null;
     }
 }
 

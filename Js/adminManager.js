@@ -314,14 +314,17 @@ class AdminManager {
             searchResultsList.innerHTML = '<p class="text-gray-500 italic">Không tìm thấy kết quả nào cho từ khóa của bạn.</p>';
         } else {
             searchResultsList.innerHTML = results.map(result => {
-                const articleId = result.metadata?.source_id || result.id || result.article_id;
+                // Ưu tiên article_id (int) trước id (UUID vector)
+                const articleId = result.article_id || result.metadata?.source_id || result.id;
+                const vectorId = result.id;  // UUID của vector để reference
+                
                 return `
                 <div class="search-result-item p-4 border border-gray-200 rounded-lg">
                     <div class="flex justify-between items-start mb-2">
                         <h5 class="font-medium text-gray-900 flex-1">${result.metadata?.article_title || 'Không có tiêu đề'}</h5>
                         <div class="flex items-center gap-2 ml-4">
                             <button 
-                                onclick="adminManager.deleteArticle('${articleId}')" 
+                                onclick="adminManager.deleteArticle(${articleId})" 
                                 class="text-red-600 hover:text-red-800 p-1 rounded transition-colors"
                                 title="Xóa bài viết"
                             >
@@ -332,7 +335,8 @@ class AdminManager {
                     <p class="text-sm text-gray-600 mb-2">${this.truncateText(result.content, 200)}</p>
                     <div class="flex justify-between items-center text-xs text-gray-500">
                         <span>ID Bài viết: ${articleId}</span>
-                        <span>Phần: ${result.chunk_index || 'N/A'}</span>
+                        <span>Đoạn: ${result.chunk_index ?? 'N/A'}</span>
+                        <span class="text-gray-400" title="Vector ID">${vectorId.substring(0, 8)}...</span>
                     </div>
                 </div>
                 `;
@@ -343,8 +347,15 @@ class AdminManager {
     }
 
     async deleteArticle(articleId) {
-        if (!articleId) {
+        if (!articleId || articleId === 'undefined') {
             this.showToast('ID bài viết không hợp lệ', 'error');
+            return;
+        }
+        
+        // Đảm bảo articleId là số nguyên
+        articleId = parseInt(articleId, 10);
+        if (isNaN(articleId)) {
+            this.showToast('ID bài viết phải là số nguyên', 'error');
             return;
         }
 
